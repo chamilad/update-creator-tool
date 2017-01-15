@@ -161,6 +161,10 @@ func createUpdate(updateDirectoryPath, distributionPath string) {
 	updateName := getUpdateName(updateDescriptor, constant.UPDATE_NAME_PREFIX)
 	viper.Set(constant.UPDATE_NAME, updateName)
 
+	// Create update temp path
+	updateTempPath := filepath.Join(viper.GetString(constant.TEMP_DIR_KEY), "updates", updateName)
+	viper.Set(constant.UPDATE_TEMP_DIR, updateTempPath)
+
 	// Get ignored files. These files wont be stored in the data structure. So matches will not be searched for
 	// these files
 	ignoredFiles := getIgnoredFilesInUpdate()
@@ -206,7 +210,7 @@ func createUpdate(updateDirectoryPath, distributionPath string) {
 
 	// Create an interrupt handler
 	cleanupChannel := util.HandleInterrupts(func() {
-		util.CleanUpDirectory(constant.TEMP_DIR)
+		util.CleanUpDirectory(viper.GetString(constant.UPDATE_TEMP_DIR))
 	})
 
 	//todo: save the selected location to generate the final summary map
@@ -307,7 +311,7 @@ func createUpdate(updateDirectoryPath, distributionPath string) {
 	updateZipName := updateName + ".zip"
 	logger.Debug(fmt.Sprintf("updateZipName: %s", updateZipName))
 
-	targetDirectory := path.Join(constant.TEMP_DIR, updateName)
+	targetDirectory := viper.GetString(constant.UPDATE_TEMP_DIR)
 	targetDirectory = strings.Replace(targetDirectory, "/", constant.PATH_SEPARATOR, -1)
 
 	logger.Debug(fmt.Sprintf("targetDirectory: %s", targetDirectory))
@@ -315,7 +319,7 @@ func createUpdate(updateDirectoryPath, distributionPath string) {
 	util.HandleErrorAndExit(err)
 
 	// Remove the temp directories
-	util.CleanUpDirectory(constant.TEMP_DIR)
+	util.CleanUpDirectory(viper.GetString(constant.UPDATE_TEMP_DIR))
 
 	signal.Stop(cleanupChannel)
 
@@ -966,8 +970,7 @@ func marshalUpdateDescriptor(updateDescriptor *util.UpdateDescriptor) ([]byte, e
 
 // This function will save update descriptor after modifying the file_changes section.
 func saveUpdateDescriptor(updateDescriptorFilename string, data []byte) error {
-	updateName := viper.GetString(constant.UPDATE_NAME)
-	destination := path.Join(constant.TEMP_DIR, updateName, updateDescriptorFilename)
+	destination := path.Join(viper.GetString(constant.UPDATE_TEMP_DIR), updateDescriptorFilename)
 	// Open a new file for writing only
 	file, err := os.OpenFile(
 		destination,
@@ -992,15 +995,13 @@ func saveUpdateDescriptor(updateDescriptorFilename string, data []byte) error {
 // This function will copy resource files to the temp directory.
 func copyResourceFilesToTempDir(resourceFilesMap map[string]bool) error {
 	// Create the directories if they are not available
-	updateName := viper.GetString(constant.UPDATE_NAME)
-	destination := path.Join(constant.TEMP_DIR, updateName, constant.CARBON_HOME)
+	destination := path.Join(viper.GetString(constant.UPDATE_TEMP_DIR), constant.CARBON_HOME)
 	util.CreateDirectory(destination)
 	// Iterate through all resource files
 	for filename, isMandatory := range resourceFilesMap {
 		updateRoot := viper.GetString(constant.UPDATE_ROOT)
-		updateName := viper.GetString(constant.UPDATE_NAME)
 		source := path.Join(updateRoot, filename)
-		destination := path.Join(constant.TEMP_DIR, updateName, filename)
+		destination := path.Join(viper.GetString(constant.UPDATE_TEMP_DIR), filename)
 		// Copy the file
 		err := util.CopyFile(source, destination)
 		if err != nil {
@@ -1053,9 +1054,8 @@ func copyFile(filename string, locationInUpdate, relativeLocationInTemp string, 
 updateDescriptor *util.UpdateDescriptor) error {
 	logger.Debug(fmt.Sprintf("[FINAL][COPY ROOT] Name: %s ; IsDir: false ; From: %s ; To: %s", filename,
 		locationInUpdate, relativeLocationInTemp))
-	updateName := viper.GetString(constant.UPDATE_NAME)
 	source := path.Join(locationInUpdate, filename)
-	carbonHome := path.Join(constant.TEMP_DIR, updateName, constant.CARBON_HOME)
+	carbonHome := path.Join(viper.GetString(constant.UPDATE_TEMP_DIR), constant.CARBON_HOME)
 	destination := path.Join(carbonHome, relativeLocationInTemp)
 
 	//Replace all / with OS specific path separators to handle OSs like Windows

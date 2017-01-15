@@ -86,7 +86,6 @@ do
     zipdir="$(dirname ${target})/build/target/${zipfile}"
     mkdir -p ${zipdir}
 
-    cp -r "$(dirname ${target})/resources" ${zipdir}
     cp -r "$(dirname ${target})/README.md" ${zipdir}
     cp -r "$(dirname ${target})/LICENSE.txt" ${zipdir}
 
