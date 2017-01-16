@@ -25,6 +25,11 @@ import (
 	"github.com/spf13/viper"
 	"github.com/wso2/update-creator-tool/constant"
 	"github.com/wso2/update-creator-tool/util"
+	"io/ioutil"
+	"path/filepath"
+	"runtime"
+	"time"
+	"strings"
 )
 
 var (
@@ -68,6 +73,8 @@ func initConfig() {
 	}
 
 	setDefaultValues()
+
+	createTempDirs()
 
 	viper.SetConfigName("config") // name of config file (without extension)
 	viper.AddConfigPath(".")
@@ -121,4 +128,60 @@ func setDefaultValues() {
 	viper.SetDefault(constant.RESOURCE_FILES_OPTIONAL, util.ResourceFiles_Optional)
 	viper.SetDefault(constant.RESOURCE_FILES_SKIP, util.ResourceFiles_Skip)
 	viper.SetDefault(constant.PLATFORM_VERSIONS, util.PlatformVersions)
+}
+
+// Create temp repository if it doesn't exists
+func createTempDirs() {
+	// Clean the previous temp directories which one hour old.
+	if runtime.GOOS == "windows" {
+		deleteTempDirectories("\\\\?\\" + os.TempDir(), constant.WUM_UC_TEMP_DIR)
+	} else {
+		deleteTempDirectories(os.TempDir(), constant.WUM_UC_TEMP_DIR)
+	}
+
+	// Create new temp dirs for this run.
+	tempDirPath, err := ioutil.TempDir("", constant.WUM_UC_TEMP_DIR)
+	if err != nil {
+		util.HandleErrorAndExit(err, "Cannot create the temp directory wum-temp.")
+	}
+
+	if runtime.GOOS == "windows" {
+		tempDirPath = "\\\\?\\" + tempDirPath
+	}
+
+	viper.Set(constant.TEMP_DIR_KEY, tempDirPath)
+}
+
+// Delete temp directories which are created 1 hour ago.
+func deleteTempDirectories(tempDirBase, tempDirName string) {
+	logger.Debug("Deleting temp directories...")
+	file, err := os.Open(tempDirBase)
+	if err != nil {
+		util.HandleErrorAndExit(err, fmt.Sprintf("unable to read file '%v'", tempDirBase))
+	}
+	defer file.Close()
+
+	tempDirFiles, err := ioutil.ReadDir(tempDirBase)
+	if err != nil {
+		util.HandleErrorAndExit(err, fmt.Sprintf("unable to read file '%v'", tempDirBase))
+	}
+
+	for _, tempFile := range tempDirFiles {
+		if !strings.HasPrefix(tempFile.Name(), tempDirName) {
+			continue
+		}
+
+		// Check whether the temp file is created one hour ago
+		duration := time.Since(tempFile.ModTime())
+		if duration.Hours() < 1  {
+			continue
+		}
+
+		tempDirPath := filepath.Join(tempDirBase, tempFile.Name())
+		logger.Debug("Deleting the temp directory: %v since it is older than one hour.\n", tempDirPath)
+		err = os.RemoveAll(tempDirPath)
+		if err != nil {
+			util.HandleErrorAndExit(err, fmt.Sprintf("unable to delete file '%v'. Please delete the file manually.", tempDirPath))
+		}
+	}
 }
