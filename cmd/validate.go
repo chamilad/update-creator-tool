@@ -229,10 +229,20 @@ func readUpdateZip(filename string) (map[string]bool, *util.UpdateDescriptor, er
 				if err != nil {
 					return nil, nil, err
 				}
+
+				// All updates should be licensed to WSO2 Update EULA
 				dataString := string(data)
-				if strings.Contains(dataString, "under Apache License 2.0") {
-					isASecPatch = true
+				eulaPath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+				if err != nil {
+					util.HandleErrorAndExit(err, "Couldn't get current working directory.")
 				}
+
+				eulaPath = filepath.Join(eulaPath, "resources", constant.LICENSE_FILE)
+				eulaText, _ := ioutil.ReadFile(eulaPath)
+				if dataString != string(eulaText) {
+					return nil, nil, errors.New("Update license has been changed from WSO2 Update EULA 1.0.")
+				}
+
 			case constant.INSTRUCTIONS_FILE:
 				_, err := validateFile(file, constant.INSTRUCTIONS_FILE, fullPath, updateName)
 				if err != nil {

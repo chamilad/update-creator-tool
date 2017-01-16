@@ -195,7 +195,7 @@ func initDirectory(destination string) {
 		absDestination))
 
 	// Check if LICENSE.txt already exists
-	licenseSource, err := os.Getwd()
+	licenseSource, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		util.HandleErrorAndExit(err, "Couldn't get current working directory.")
 	}
