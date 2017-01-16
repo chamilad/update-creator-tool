@@ -33,8 +33,10 @@ const (
 	INSTRUCTIONS_FILE       = "instructions.txt"
 	UPDATE_DESCRIPTOR_FILE  = "update-descriptor.yaml"
 
+	WUM_UC_TEMP_DIR = "wum-uc-temp"
 	//Temporary directory to copy files before creating the new zip
-	TEMP_DIR = "temp"
+	UPDATE_TEMP_DIR = "update.temp.dir"
+	TEMP_DIR_KEY = "temp.dir"
 	//This is used to store carbon.home string
 	CARBON_HOME = "carbon.home"
 	//Prefix of the update file and the root directory of the update zip
