@@ -195,9 +195,13 @@ func initDirectory(destination string) {
 		absDestination))
 
 	// Check if LICENSE.txt already exists
-	licenseSource, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	licenseSource, err := os.Getwd()
 	if err != nil {
 		util.HandleErrorAndExit(err, "Couldn't get current working directory.")
+	}
+
+	if strings.HasSuffix(licenseSource, "bin") {
+		licenseSource = licenseSource[0:len(licenseSource)-len("bin")]
 	}
 
 	licenseSource = filepath.Join(licenseSource, "resources", constant.LICENSE_FILE)
@@ -230,6 +234,10 @@ func initDirectory(destination string) {
 		} else {
 			util.PrintInfo("Existing license is WSO2 Update EULA 1.0. This will be used as is.")
 		}
+	} else {
+		// Write/overwrite LICENSE.txt
+		util.CopyFile(licenseSource, licenseDest)
+		util.PrintInfo(fmt.Sprintf("WSO2 Update EULA 1.0 copied to %v", licenseDest))
 	}
 
 	//Print whats next

@@ -232,15 +232,24 @@ func readUpdateZip(filename string) (map[string]bool, *util.UpdateDescriptor, er
 
 				// All updates should be licensed to WSO2 Update EULA
 				dataString := string(data)
-				eulaPath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+				eulaPath, err := os.Getwd()
 				if err != nil {
 					util.HandleErrorAndExit(err, "Couldn't get current working directory.")
+				}
+
+				if strings.HasSuffix(eulaPath, "bin") {
+					eulaPath = eulaPath[0:len(eulaPath)-len("bin")]
 				}
 
 				eulaPath = filepath.Join(eulaPath, "resources", constant.LICENSE_FILE)
 				eulaText, _ := ioutil.ReadFile(eulaPath)
 				if dataString != string(eulaText) {
-					return nil, nil, errors.New("Update license has been changed from WSO2 Update EULA 1.0.")
+					if strings.Contains(dataString, "under Apache License 2.0") {
+						isASecPatch = true
+						util.PrintInfo("Update license is Apache License 2.0 and not WUM Update EULA 1.0.")
+					} else {
+						util.PrintInfo("Update license is not WUM Update EULA 1.0.")
+					}
 				}
 
 			case constant.INSTRUCTIONS_FILE:
@@ -281,6 +290,7 @@ func readUpdateZip(filename string) (map[string]bool, *util.UpdateDescriptor, er
 			"and remove '%v' file if necessary.", constant.NOT_A_CONTRIBUTION_FILE,
 			constant.NOT_A_CONTRIBUTION_FILE))
 	}
+
 	return fileMap, &updateDescriptor, nil
 }
 
