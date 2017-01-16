@@ -22,7 +22,7 @@ var (
 	// want to check md5 if this value is true. By default we want to check. So that's why we have set
 	// CheckMd5Disabled to false here.
 	CheckMd5Disabled        = false
-	ResourceFiles_Mandatory = []string{"update-descriptor.yaml", "LICENSE.txt"}
+	ResourceFiles_Mandatory = []string{"update-descriptor.yaml"}
 	ResourceFiles_Optional  = []string{"instructions.txt", "NOT_A_CONTRIBUTION.txt"}
 	ResourceFiles_Skip      = []string{"README.txt"}
 	PlatformVersions        = map[string]string{

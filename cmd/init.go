@@ -194,6 +194,44 @@ func initDirectory(destination string) {
 	util.PrintInfo(fmt.Sprintf("'%s' has been successfully created at '%s'.", constant.UPDATE_DESCRIPTOR_FILE,
 		absDestination))
 
+	// Check if LICENSE.txt already exists
+	licenseSource, err := os.Getwd()
+	if err != nil {
+		util.HandleErrorAndExit(err, "Couldn't get current working directory.")
+	}
+
+	licenseSource = filepath.Join(licenseSource, "resources", constant.LICENSE_FILE)
+	licenseDest := filepath.Join(destination, constant.LICENSE_FILE)
+	_, err = os.Stat(licenseDest)
+	if err == nil {
+		util.PrintInfo("An existing LICENSE.txt file found")
+		// Text compare for EULA
+		destTxtB, err := ioutil.ReadFile(licenseDest)
+		if err != nil {
+			util.PrintInfo("Couldn't read the existing LICENSE.txt file. ")
+			// Delete
+			err = os.Remove(licenseDest)
+			if err != nil {
+				util.HandleErrorAndExit(err, "Could not delete existing LICENSE.txt file.")
+			}
+		}
+
+		sourceTxtB, _ := ioutil.ReadFile(licenseSource)
+		if string(sourceTxtB) != string(destTxtB) {
+			util.PrintInfo("Existing license is not WSO2 Update EULA 1.0. This will not be used.")
+			err = os.Remove(licenseDest)
+			if err != nil {
+				util.HandleErrorAndExit(err, "Could not delete existing LICENSE.txt file.")
+			}
+
+			// Write/overwrite LICENSE.txt
+			util.CopyFile(licenseSource, licenseDest)
+			util.PrintInfo(fmt.Sprintf("WSO2 Update EULA 1.0 copied to %v", licenseDest))
+		} else {
+			util.PrintInfo("Existing license is WSO2 Update EULA 1.0. This will be used as is.")
+		}
+	}
+
 	//Print whats next
 	color.Set(color.Bold)
 	fmt.Println("\nWhat's next?")
